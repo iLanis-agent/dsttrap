@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DstTrap - local times that do not exist or happen twice</title>
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; background:#0b1a17; color:#eef6f3; line-height:1.5; }
+  .wrap { max-width:700px; margin:0 auto; padding:26px 16px 50px; }
+  h1 { font-size:28px; } h1 span { color:#5eead4; }
+  .sub { color:#a9bfb8; margin:6px 0 16px; }
+  .card { background:#12302a; border-radius:14px; padding:14px; margin-bottom:12px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:10px; }
+  label { font-size:12px; color:#a9bfb8; display:block; margin-bottom:3px; }
+  input,select { width:100%; background:#0b1a17; color:#eef6f3; border:1px solid #4a5e58; border-radius:8px; padding:8px; font-size:15px; font-family:inherit; }
+  button { background:#17806f; color:#eef6f3; border:0; padding:8px 14px; border-radius:8px; cursor:pointer; font-size:14px; margin-right:6px; margin-top:10px; }
+  table { width:100%; border-collapse:collapse; } td,th { text-align:left; padding:8px 4px; border-bottom:1px solid #2f4540; } th { font-size:12px; color:#a9bfb8; font-weight:600; }
+  td.v { font-size:22px; font-weight:800; color:#5eead4; } tr.me td.v { color:#eef6f3; }
+  .stats { display:flex; gap:22px; flex-wrap:wrap; margin-top:12px; } .stats b { display:block; font-size:20px; } .muted { color:#a9bfb8; font-size:13px; }
+  .err { color:#ff9c8a; } .note { font-size:12.5px; color:#7f968f; margin-top:6px; }
+
+  td.v { font-size:17px; } td, th { font-size:14px; } .bar { height:10px; background:#0b1a17; border-radius:6px; overflow:hidden; margin-top:6px; } .bar i { display:block; height:100%; background:#5eead4; } .bar i.over { background:#ff7b72; } .no { color:#ff9c8a; }
+  .cb { display:inline-flex; align-items:center; gap:4px; margin-right:12px; font-size:14px; color:#eef6f3; } .cb input { width:auto; } .big { font-family:monospace; font-size:26px; font-weight:800; color:#5eead4; } td.v.m { font-family:monospace; }
+  textarea { width:100%; background:#0b1a17; color:#eef6f3; border:1px solid #4a5e58; border-radius:8px; padding:8px; font-size:14px; font-family:monospace; min-height:110px; } .ok { color:#86efac; font-weight:700; } .no { color:#ff9c8a; } td.m { font-family:monospace; } .chip { display:inline-block; font-family:monospace; background:#0b1a17; border-radius:6px; padding:2px 6px; margin:2px 4px 2px 0; }
+  textarea { width:100%; background:#0b1a17; color:#eef6f3; border:1px solid #4a5e58; border-radius:8px; padding:8px; font-size:13px; font-family:monospace; min-height:130px; } .badge { display:inline-block; font-weight:800; padding:4px 12px; border-radius:20px; background:#0b1a17; } .bar { height:14px; background:#0b1a17; border-radius:8px; position:relative; margin:12px 0 6px; overflow:hidden; } .bar i.f { position:absolute; left:0; top:0; bottom:0; background:#2dbfa5; } .bar i.n { position:absolute; top:0; bottom:0; width:3px; background:#fff; }
+  .seg { display:inline-block; height:22px; background:#2dbfa5; border-radius:4px; margin:2px 2px 2px 0; vertical-align:middle; } .seg.last { background:#17806f; } .chip { display:inline-block; font-family:monospace; background:#0b1a17; border-radius:6px; padding:2px 8px; margin:2px 4px 2px 0; font-size:16px; }
+.kind{display:inline-block;font-weight:800;padding:4px 12px;border-radius:20px;background:#0b1a17}.kind.gap{color:#ff9c8a}.kind.ambiguous{color:#fbbf24}.kind.ok{color:#86efac} .row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px} .f{padding:6px 0;border-bottom:1px solid #2f4540;font-size:14px} select{width:100%}</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Dst<span>Trap</span></h1>
+  <div class="sub">Check if a wall-clock time exists in a time zone, and which days of the year a daily job at that time gets skipped or runs twice.</div>
+  <div class="card">
+    <div class="row"><div><label>Time zone (IANA name)</label><input id="z" list="zl" value="America/New_York"><datalist id="zl"></datalist></div><div><label>Date</label><input id="d" type="date" value="2024-03-10"></div><div><label>Local time</label><input id="tm" type="time" value="02:30"></div></div>
+    <button id="p1">New York, spring</button><button id="p2">New York, fall</button><button id="p3">Berlin 02:30 job</button><button id="p4">Lord Howe</button><button id="p5">Jerusalem</button><button id="p6">Tokyo</button>
+    <div id="res" style="margin-top:12px"></div>
+  </div>
+  <div class="card"><h2 style="margin:0 0 8px;font-size:15px">A daily job at this time, all year</h2><div id="job"></div></div>
+  <div class="card"><h2 style="margin:0 0 8px;font-size:15px">Clock changes in the year</h2><table id="tr"></table></div>
+  <div class="note">Zone rules come from the time zone database built into your browser (Intl), for the year you pick. The date and zone fields use the browser's own handling, so a zone name the browser does not know shows an error. A time inside a gap has two readings, one using the offset before the jump and one after; JavaScript's Temporal "compatible" rule, many calendar apps and cron implementations use the first, but systems differ, which is the point. When a time happens twice, a job scheduler may run once, twice, or pick either one. Safest options for a recurring job: schedule it in UTC, or keep it out of the hours around the clock change. Future years assume today's rules and governments change them. Runs in your browser, nothing stored.</div>
+</div>
+<script src="engine.js"></script>
+<script>
+(function () {
+  var D = window.DstTrap, $ = function (i) { return document.getElementById(i); };
+  function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
+  function utc(ms) { return new Date(ms).toISOString().replace('T', ' ').slice(0, 16) + ' UTC'; }
+  function lp(p) { return D.pad(p.hour) + ':' + D.pad(p.minute); }
+  try { if (Intl.supportedValuesOf) $('zl').innerHTML = Intl.supportedValuesOf('timeZone').map(function (z) { return '<option value="' + z + '">'; }).join(''); } catch (e) {}
+  var PRE = { p1: ['America/New_York', '2024-03-10', '02:30'], p2: ['America/New_York', '2024-11-03', '01:30'], p3: ['Europe/Berlin', '2024-03-31', '02:30'], p4: ['Australia/Lord_Howe', '2024-10-06', '02:15'], p5: ['Asia/Jerusalem', '2024-03-29', '02:30'], p6: ['Asia/Tokyo', '2024-03-10', '02:30'] };
+  Object.keys(PRE).forEach(function (k) { $(k).onclick = function () { $('z').value = PRE[k][0]; $('d').value = PRE[k][1]; $('tm').value = PRE[k][2]; run(); }; });
+  function run() {
+    var z = $('z').value.trim(), ds = $('d').value.split('-').map(Number), ts = $('tm').value.split(':').map(Number);
+    if (!D.validZone(z)) { $('res').innerHTML = '<span class="err">Unknown time zone "' + esc(z) + '". Use an IANA name like Europe/Paris.</span>'; $('job').innerHTML = ''; $('tr').innerHTML = ''; return; }
+    if (ds.length !== 3 || isNaN(ds[0]) || ts.length < 2 || isNaN(ts[0])) { $('res').innerHTML = '<span class="err">Pick a date and a time.</span>'; $('job').innerHTML = ''; $('tr').innerHTML = ''; return; }
+    var c = D.classify(z, ds[0], ds[1], ds[2], ts[0], ts[1]), h = '';
+    if (c.kind === 'ok') h = '<span class="kind ok">Exists once</span><div class="f">' + utc(c.instants[0].utc) + ' (offset ' + D.offStr(c.instants[0].offset) + ')</div>';
+    else if (c.kind === 'ambiguous') h = '<span class="kind ambiguous">Happens twice</span>' + c.instants.map(function (i, k) { return '<div class="f">' + (k ? 'Second' : 'First') + ': ' + utc(i.utc) + ' (offset ' + D.offStr(i.offset) + ')</div>'; }).join('') + '<div class="muted">The gap between the two is ' + ((c.instants[1].utc - c.instants[0].utc) / 60000) + ' minutes.</div>';
+    else h = '<span class="kind gap">Does not exist</span>' + c.readings.map(function (i, k) { return '<div class="f">' + (k ? 'Reading with the offset after the jump' : 'Reading with the offset before the jump') + ': ' + utc(i.utc) + ' (offset ' + D.offStr(i.offset) + ')</div>'; }).join('') + '<div class="muted">The clocks skip this time, so any job or event set for it needs a rule for which reading wins.</div>';
+    $('res').innerHTML = h;
+    var jobs = D.dailyJob(z, ds[0], ts[0], ts[1]);
+    $('job').innerHTML = jobs.length ? '<div class="muted" style="margin-bottom:6px">A job set for ' + D.pad(ts[0]) + ':' + D.pad(ts[1]) + ' local in ' + esc(z) + ' in ' + ds[0] + ':</div>' + jobs.map(function (j) { return '<div class="f"><b>' + j.date + '</b> ' + (j.kind === 'gap' ? '<span class="no">is skipped</span> (the time does not exist)' : '<span style="color:#fbbf24">runs twice or is ambiguous</span> (the time happens twice)') + '</div>'; }).join('') : '<span class="ok">Safe: this time exists exactly once every day of ' + ds[0] + '.</span>';
+    var tr = D.transitions(z, ds[0]);
+    $('tr').innerHTML = tr.length ? '<tr><th>Clock change (UTC)</th><th>Wall clock</th><th>Offset</th></tr>' + tr.map(function (t) { return '<tr><td class="m">' + utc(t.utc) + '</td><td class="m">' + t.localBefore.year + '-' + D.pad(t.localBefore.month) + '-' + D.pad(t.localBefore.day) + ' ' + lp(t.localBefore) + ' then ' + lp(t.localAfter) + '</td><td class="m">' + D.offStr(t.from) + ' to ' + D.offStr(t.to) + ' (' + (t.deltaMin > 0 ? '+' : '') + t.deltaMin + ' min)</td></tr>'; }).join('') : '<tr><td class="muted">No clock changes in ' + ds[0] + ' for this zone.</td></tr>';
+  }
+  ['z', 'd', 'tm'].forEach(function (i) { $(i).oninput = run; $(i).onchange = run; });
+  run();
+})();
+</script>
+</body>
+</html>
