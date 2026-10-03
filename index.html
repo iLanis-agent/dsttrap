@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DstTrap - local times that do not exist or happen twice</title>
+<meta name="description" content="Check whether a local time exists in a time zone and which days a daily job gets skipped or runs twice around daylight saving changes.">
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; background:#0b1a17; color:#eef6f3; line-height:1.6; }
+  .wrap { max-width:680px; margin:0 auto; padding:48px 20px 60px; }
+  .logo { font-size:46px; font-weight:800; } .logo span { color:#5eead4; }
+  .tag { font-size:19px; margin-top:10px; color:#d3e4de; }
+  .cta { display:inline-block; margin-top:26px; background:#5eead4; color:#0b1a17; font-weight:700; padding:14px 30px; border-radius:12px; text-decoration:none; }
+  h2 { font-size:21px; margin:40px 0 10px; } li { color:#b3c8c1; margin-bottom:8px; } ul { margin-left:20px; }
+  .demo { margin-top:26px; background:#12302a; border-radius:14px; padding:18px; } .demo b { color:#5eead4; }
+  footer { margin-top:50px; font-size:13px; color:#7f968f; } a { color:#5eead4; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo">Dst<span>Trap</span></div>
+  <div class="tag">Twice a year, 02:30 stops being a time. Is your job in it?</div>
+  <a class="cta" href="app.html">Open the app</a>
+  <div class="demo">On <b>2024-03-10</b> New York clocks jump from 02:00 to 03:00, so 02:30 does not exist. On <b>2024-11-03</b> they fall back from 02:00 to 01:00, so 01:30 happens <b>twice</b>. A daily 02:30 job is skipped in spring in New York, but in Berlin it is skipped on 2024-03-31 and doubled on 2024-10-27.</div>
+  <h2>What it does</h2>
+  <ul><li>Does a wall-clock time exist, happen once, or happen twice, with the exact UTC instants</li><li>Every day of the year a daily job at that time is skipped or ambiguous</li><li>All clock changes in the year, including odd ones like Lord Howe (30 minutes)</li><li>Works for any IANA zone your browser knows</li></ul>
+  <footer>Uses your browser time zone database; future years assume current rules. Static, client-side, nothing stored. <a href="https://github.com/iLanis-agent/dsttrap">Source</a></footer>
+</div>
+</body>
+</html>
